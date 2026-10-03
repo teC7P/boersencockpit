@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Börsencockpit</title>
+<meta name="description" content="Marktlage, Kennzahlen, Smart/Dumb Money und neue Videos auf einen Blick.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232747c9'/%3E%3Cpath d='M6 22l6-7 5 4 9-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="page">
+  <header class="mbar">
+    <h1 class="brand">Börsencockpit</h1>
+    <span class="stamp" id="stamp">lädt …</span>
+  </header>
+
+  <section class="lage" aria-live="polite">
+    <div class="verdict"><strong id="verdictLabel">Marktlage</strong><span id="verdictText"></span></div>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <section class="groups" id="groups" aria-label="Kennzahlen"></section>
+
+  <div class="lower">
+    <section class="panel" aria-labelledby="sdH">
+      <div class="ph"><h2 id="sdH">Smart Money / Dumb Money</h2><small id="sdMeta">S&amp;P 500 · CFTC · wöchentlich</small></div>
+      <div class="sd-nums">
+        <div><b id="sdSmart" class="smart">–</b><span>Smart (Absicherer)</span></div>
+        <div><b id="sdDumb" class="dumb">–</b><span>Dumb (Kleinspekulanten)</span></div>
+        <div><b id="sdSpread">–</b><span id="sdLabel">Abstand</span></div>
+      </div>
+      <svg class="sd-chart" id="sdChart" viewBox="0 0 520 220" role="img" aria-label="Verlauf Smart- und Dumb-Money-Index, 52 Wochen"></svg>
+      <div class="sd-legend"><span><i class="smart-bg"></i>Smart</span><span><i class="dumb-bg"></i>Dumb</span><span>Signal ab Abstand ±50</span></div>
+      <details class="explain">
+        <summary>Wie wird das berechnet?</summary>
+        <p>Grundlage sind die wöchentlichen Positionsdaten der US-Terminmarktaufsicht CFTC im E-Mini-S&amp;P-500-Future. Smart Money sind die Commercials (Absicherer), Dumb Money die kleinen, nicht meldepflichtigen Spekulanten. Ihre Netto-Positionen werden auf 0 bis 100 skaliert, gemessen an den letzten drei Jahren. Ab einem Abstand von +50 kaufen die Profis deutlich stärker als die Kleinanleger, unter −50 ist es umgekehrt.</p>
+      </details>
+    </section>
+
+    <section class="panel" aria-labelledby="vH">
+      <div class="ph"><h2 id="vH">Neue Videos</h2><small id="vMeta"></small></div>
+      <ul class="vids" id="vids"></ul>
+      <details class="explain">
+        <summary>Alle Kanäle</summary>
+        <div class="links" id="channels"></div>
+      </details>
+      <div class="ph"><h2>Magazine</h2><small>Readly</small></div>
+      <div class="links" id="mags"></div>
+    </section>
+  </div>
+
+  <footer class="foot" id="foot">Kein Anlagerat. Kurse bis zu 15 Minuten verzögert.</footer>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

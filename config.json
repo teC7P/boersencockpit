@@ -1,0 +1,32 @@
+{
+  "channels": [
+    {"name": "Maxim investiert", "handle": "maximinvestiert"},
+    {"name": "Markus Koch", "handle": "kochwallstreet"},
+    {"name": "Mario Lochner", "handle": "mario.lochner"},
+    {"name": "LoKr-Room", "handle": "LoKr-Room"},
+    {"name": "10x Trading", "handle": "1OxTrading"},
+    {"name": "HKCM", "handle": "hkcm"},
+    {"name": "FinancialEducation", "handle": "FinancialEducation"},
+    {"name": "Tori Trades", "handle": "ToriTrades"},
+    {"name": "Ticker Symbol: YOU", "handle": "TickerSymbolYOU"},
+    {"name": "Fokusinvestor", "handle": "fokusinvestor"},
+    {"name": "CouchInvestor", "handle": "CouchInvestor"},
+    {"name": "FelixFriends", "handle": "FelixFriends"},
+    {"name": "Tom Nash", "handle": "TomNashTV"},
+    {"name": "Erichsen", "handle": "ErichsenGeld"}
+  ],
+  "magazines": [
+    {"name": "Aktien Magazin", "url": "https://de.readly.com/magazines/aktien-magazin"},
+    {"name": "AnlagePunk", "url": "https://de.readly.com/magazines/anlagepunk"},
+    {"name": "AnlegerPlus News", "url": "https://de.readly.com/magazines/anlegerplus-news"},
+    {"name": "Börse Online", "url": "https://de.readly.com/magazines/borse-online"},
+    {"name": "DUP Unternehmer Magazin", "url": "https://de.readly.com/magazines/dup-unternehmer-magazin"},
+    {"name": "Euro", "url": "https://de.readly.com/magazines/euro"},
+    {"name": "Euro am Sonntag", "url": "https://de.readly.com/magazines/euro-am-sonntag"},
+    {"name": "Focus Money", "url": "https://de.readly.com/magazines/focus-money"},
+    {"name": "Markteinblicke", "url": "https://de.readly.com/magazines/markteinblicke"},
+    {"name": "Traders", "url": "https://de.readly.com/magazines/traders"},
+    {"name": "WirtschaftsWoche", "url": "https://de.readly.com/magazines/wirtschaftswoche"}
+  ],
+  "video_count": 8
+}
