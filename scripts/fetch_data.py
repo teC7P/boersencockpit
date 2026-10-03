@@ -68,15 +68,46 @@ def safe(label, fn, *args):
 
 # ---------------------------------------------------------------- Quellen
 
+_YAHOO = {"opener": None, "crumb": None}
+
+
+def _yahoo_session():
+    """Yahoo verlangt seit 2023 ein Cookie plus "Crumb", sonst kommt oft 429."""
+    if _YAHOO["opener"] is None:
+        import http.cookiejar
+        jar = http.cookiejar.CookieJar()
+        op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+        op.addheaders = [("User-Agent", UA), ("Accept", "*/*"), ("Accept-Language", "en-US,en;q=0.9")]
+        for u in ("https://fc.yahoo.com", "https://finance.yahoo.com/"):
+            try:
+                op.open(u, timeout=15).read(200)
+            except Exception:  # noqa: BLE001  (fc.yahoo.com antwortet mit 404, setzt aber das Cookie)
+                pass
+        crumb = None
+        for host in ("query1", "query2"):
+            try:
+                c = op.open(f"https://{host}.finance.yahoo.com/v1/test/getcrumb", timeout=15).read().decode().strip()
+                if c and "<" not in c and len(c) < 40:
+                    crumb = c
+                    break
+            except Exception as e:  # noqa: BLE001
+                log(f"Yahoo-Crumb fehlgeschlagen: {e}")
+        _YAHOO.update(opener=op, crumb=crumb)
+    return _YAHOO["opener"], _YAHOO["crumb"]
+
+
 def yahoo_series(symbol):
     """Kurs, Vortagesschluss und Tagesschlüsse (1 Jahr) von Yahoo Finance."""
+    op, crumb = _yahoo_session()
     q = urllib.parse.quote(symbol)
+    extra = f"&crumb={urllib.parse.quote(crumb)}" if crumb else ""
     last = None
-    for host in ("query1", "query2"):
+    for attempt, host in enumerate(("query1", "query2", "query1")):
         try:
-            d = http_json(f"https://{host}.finance.yahoo.com/v8/finance/chart/{q}"
-                          "?range=1y&interval=1d&includePrePost=false")
-            res = d["chart"]["result"][0]
+            time.sleep(0.4 + attempt * 2)
+            raw = op.open(f"https://{host}.finance.yahoo.com/v8/finance/chart/{q}"
+                          f"?range=1y&interval=1d&includePrePost=false{extra}", timeout=15).read()
+            res = json.loads(raw)["chart"]["result"][0]
             break
         except Exception as e:  # noqa: BLE001
             last = e
@@ -106,8 +137,59 @@ def yahoo_series(symbol):
     }
 
 
+
+def stooq_series(symbol):
+    txt = http_get(f"https://stooq.com/q/d/l/?s={urllib.parse.quote(symbol)}&i=d")
+    rows = [r for r in csv.reader(io.StringIO(txt))][1:]
+    vals = [(r[0], float(r[4])) for r in rows if len(r) > 4 and r[4] not in ("", "null")]
+    if len(vals) < 5:
+        raise RuntimeError(f"Stooq {symbol}: keine Daten ({txt[:60]!r})")
+    vals = vals[-260:]
+    return {"value": vals[-1][1], "prev": vals[-2][1], "history": [v for _, v in vals],
+            "asOf": vals[-1][0], "source": "Stooq"}
+
+
+def cboe_vix():
+    txt = http_get("https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv")
+    rows = list(csv.DictReader(io.StringIO(txt)))[-260:]
+    vals = [float(r["CLOSE"]) for r in rows]
+    return {"value": vals[-1], "prev": vals[-2], "history": vals,
+            "asOf": rows[-1]["DATE"], "source": "Cboe"}
+
+
+def treasury_10y():
+    vals = []
+    for year in (NOW.year - 1, NOW.year):
+        txt = http_get("https://home.treasury.gov/resource-center/data-chart-center/interest-rates/"
+                       f"daily-treasury-rates.csv/{year}/all?type=daily_treasury_yield_curve"
+                       f"&field_tdr_date_value={year}&page&_format=csv")
+        for r in csv.DictReader(io.StringIO(txt)):
+            if r.get("10 Yr"):
+                m, d, y = r["Date"].split("/")
+                vals.append((f"{y}-{m}-{d}", float(r["10 Yr"])))
+    vals.sort()
+    if len(vals) < 5:
+        raise RuntimeError("US-Treasury: zu wenige Daten")
+    vals = vals[-260:]
+    return {"value": vals[-1][1], "prev": vals[-2][1], "history": [v for _, v in vals],
+            "asOf": vals[-1][0], "source": "US Treasury"}
+
+
+def ecb_eurusd():
+    return sdmx_csv_series("https://data-api.ecb.europa.eu/service/data/EXR/D.USD.EUR.SP00.A"
+                           "?lastNObservations=260&format=csvdata", "EZB")
+
+
+def coingecko_btc():
+    d = http_json("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=365&interval=daily")
+    vals = [p[1] for p in d["prices"]]
+    return {"value": vals[-1], "prev": vals[-2], "history": vals,
+            "asOf": datetime.fromtimestamp(d["prices"][-1][0] / 1000, timezone.utc).isoformat(),
+            "source": "CoinGecko"}
+
+
 def fred_series(series_id):
-    txt = http_get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}")
+    txt = http_get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}", timeout=10, retries=0)
     rows = list(csv.reader(io.StringIO(txt)))[1:]
     vals = [(r[0], float(r[1])) for r in rows if len(r) > 1 and r[1] not in ("", ".")]
     if len(vals) < 5:
@@ -294,29 +376,31 @@ def channel_videos(name, handle, cid):
 
 # ---------------------------------------------------------------- Aufbau
 
+def yh(symbol, *fallbacks):
+    return lambda: first_ok(lambda: yahoo_series(symbol), *fallbacks)
+
+
 TILES = [
     ("Indizes", [
-        ("dax", "DAX", lambda: yahoo_series("^GDAXI"), {"dec": 0, "chg": "pct", "ma": True}),
-        ("spx", "S&P 500", lambda: yahoo_series("^GSPC"), {"dec": 0, "chg": "pct", "ma": True}),
-        ("ndx", "Nasdaq 100", lambda: yahoo_series("^NDX"), {"dec": 0, "chg": "pct", "ma": True}),
+        ("dax", "DAX", yh("^GDAXI", lambda: stooq_series("^dax")), {"dec": 0, "chg": "pct", "ma": True}),
+        ("spx", "S&P 500", yh("^GSPC", lambda: stooq_series("^spx")), {"dec": 0, "chg": "pct", "ma": True}),
+        ("ndx", "Nasdaq 100", yh("^NDX", lambda: stooq_series("^ndx")), {"dec": 0, "chg": "pct", "ma": True}),
     ]),
     ("Risiko & Stimmung", [
-        ("vix", "VIX", lambda: first_ok(lambda: yahoo_series("^VIX"), lambda: fred_series("VIXCLS")),
-         {"dec": 1, "chg": "pct", "invert": True}),
+        ("vix", "VIX", yh("^VIX", cboe_vix, lambda: fred_series("VIXCLS")), {"dec": 1, "chg": "pct", "invert": True}),
         ("fg", "Fear & Greed", cnn_fear_greed, {"dec": 0, "chg": "label"}),
         ("cfg", "Krypto F&G", crypto_fear_greed, {"dec": 0, "chg": "label"}),
     ]),
     ("Zinsen & Währung", [
-        ("us10", "US 10 J.", lambda: first_ok(lambda: yahoo_series("^TNX"), lambda: fred_series("DGS10")),
+        ("us10", "US 10 J.", yh("^TNX", treasury_10y, lambda: fred_series("DGS10")),
          {"dec": 2, "chg": "bp", "unit": "%", "invert": True}),
         ("de10", "Bund 10 J.", bund10, {"dec": 2, "chg": "bp", "unit": "%", "invert": True}),
-        ("eurusd", "EUR/USD", lambda: first_ok(lambda: yahoo_series("EURUSD=X"), lambda: fred_series("DEXUSEU")),
-         {"dec": 4, "chg": "pct"}),
+        ("eurusd", "EUR/USD", yh("EURUSD=X", ecb_eurusd, lambda: stooq_series("eurusd")), {"dec": 4, "chg": "pct"}),
     ]),
     ("Rohstoffe & Krypto", [
-        ("gold", "Gold", lambda: yahoo_series("GC=F"), {"dec": 0, "chg": "pct", "unit": "$"}),
-        ("brent", "Brent", lambda: yahoo_series("BZ=F"), {"dec": 2, "chg": "pct", "unit": "$"}),
-        ("btc", "Bitcoin", lambda: yahoo_series("BTC-USD"), {"dec": 0, "chg": "pct", "unit": "$"}),
+        ("gold", "Gold", yh("GC=F", lambda: stooq_series("gc.f")), {"dec": 0, "chg": "pct", "unit": "$"}),
+        ("brent", "Brent", yh("BZ=F", lambda: stooq_series("cb.f")), {"dec": 2, "chg": "pct", "unit": "$"}),
+        ("btc", "Bitcoin", yh("BTC-USD", coingecko_btc, lambda: stooq_series("btcusd")), {"dec": 0, "chg": "pct", "unit": "$"}),
     ]),
 ]
 
@@ -459,6 +543,9 @@ def main():
     # Hinweise für die GitHub-Actions-Oberfläche
     if "GITHUB_ACTIONS" in __import__("os").environ:
         ok = sum(1 for g in groups for t in g["items"] if "value" in t and not t.get("stale"))
+        srcs = ", ".join(f"{t['name']}={t.get('source', '-')}{'(alt)' if t.get('stale') else ''}"
+                         for g in groups for t in g["items"])
+        print(f"::notice title=Quellen::{srcs}")
         slow = ", ".join(f"{k} {v:.0f}s" for k, v in sorted(TIMINGS.items(), key=lambda x: -x[1])[:5])
         print(f"::notice title=Datenlauf::{ok}/12 Kennzahlen frisch, Smart/Dumb "
               f"{'ok' if sd and not sd.get('stale') else 'fehlt'}, {len(videos)} Videos. Langsamste: {slow}")
