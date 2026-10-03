@@ -96,7 +96,10 @@
     svg.innerHTML = s;
   }
 
+  var current = null;  // Zeitstempel der angezeigten Daten (für den Update-Knopf)
+
   function render(d) {
+    current = d.updated;
     var upd = Date.parse(d.updated);
     var stamp = $("stamp");
     stamp.textContent = "Stand " + new Date(upd).toLocaleString("de-DE", { weekday: "short", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
@@ -193,8 +196,44 @@
       document.body.classList.remove("locked");
       $("gate").hidden = true;
       render(JSON.parse(t));
+      showUpdate();
     });
   }
+
+  // Update-Knopf: startet den GitHub-Workflow sofort. Der dafür nötige Token (darf nur Workflows
+  // dieses Repos starten) liegt mit dem Cockpit-Passwort verschlüsselt in trigger.enc.json.
+  function showUpdate() {
+    fetch("trigger.enc.json", { method: "HEAD", cache: "no-store" }).then(function (r) { $("upd").hidden = !r.ok; });
+  }
+
+  function updateNow() {
+    var btn = $("upd"), pw = BCLock.stored();
+    var say = function (t, busy) { btn.textContent = t; btn.disabled = !!busy; };
+    if (!pw) return;
+    var owner = location.hostname.split(".")[0], repo = location.pathname.split("/")[1];
+    say("⏳ startet …", true);
+    BCLock.load("trigger.enc.json", pw).then(function (token) {
+      return fetch("https://api.github.com/repos/" + owner + "/" + repo + "/actions/workflows/update.yml/dispatches", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token.trim(), Accept: "application/vnd.github+json" },
+        body: JSON.stringify({ ref: "main" })
+      });
+    }).then(function (r) {
+      if (r.status !== 204) throw new Error(r.status === 401 ? "Token ungültig oder abgelaufen" : "GitHub-Fehler " + r.status);
+      say("⏳ wird aktualisiert …", true);
+      var before = current, tries = 0;
+      var check = function () {
+        BCLock.load("data.enc.json", pw).then(function (t) {
+          var d = JSON.parse(t);
+          if (d.updated !== before) { render(d); loadVA(pw); say("✓ aktualisiert", true); setTimeout(function () { say("🔄 Update"); }, 8000); }
+          else if (++tries < 30) setTimeout(check, 15000);
+          else say("⚠ dauert länger – später neu laden");
+        }).catch(function () { if (++tries < 30) setTimeout(check, 15000); });
+      };
+      setTimeout(check, 60000);  // Lauf + Veröffentlichung dauern meist 1,5–3 Minuten
+    }).catch(function (e) { say("⚠ " + e.message); setTimeout(function () { say("🔄 Update"); }, 8000); });
+  }
+  $("upd").onclick = updateNow;
 
   function gate() {
     document.body.classList.add("locked");
