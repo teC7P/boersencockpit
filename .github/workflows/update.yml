@@ -26,11 +26,22 @@ jobs:
         with:
           python-version: "3.12"
       - name: Daten holen
+        env:
+          COCKPIT_PASSWORD: ${{ secrets.COCKPIT_PASSWORD }}
+          BASE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
           mkdir -p site
           cp web/* site/
-          python scripts/fetch_data.py --out site/data.json \
-            --previous "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data.json"
+          if [ -z "$COCKPIT_PASSWORD" ]; then
+            python scripts/fetch_data.py --out site/data.json --previous "$BASE/data.json"
+            exit 0
+          fi
+          # Mit Passwort: nur verschlüsselte Daten veröffentlichen
+          pip install -q cryptography
+          python scripts/seal.py open "$BASE/data.enc.json" prev.json || cp /dev/null prev.json
+          [ -s prev.json ] && PREV=prev.json || PREV="$BASE/data.json"
+          python scripts/fetch_data.py --out data.json --previous "$PREV"
+          python scripts/seal.py close data.json site/data.enc.json
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site

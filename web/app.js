@@ -163,9 +163,10 @@
       var who = w.votes.map(function (v) { return '<a href="' + esc(v.url) + '" target="_blank" rel="noopener" title="' + esc(v.rating) + '">' + esc(v.channel) + " ▶</a>"; }).join(", ");
       return '<span class="n">' + esc(w.name) + "</span><span>" + badges + '</span><span class="who">' + who + "</span>";
     }).join("") : '<span class="empty">Keine Watchlist-Werte besprochen.</span>';
-    $("vaLinks").innerHTML = '<a href="report.html?r=' + esc(r.report.replace(".html", "")) + '" target="_blank">Ganzen Report öffnen</a>' +
-      '<a href="report.html" target="_blank">Archiv</a><a href="#" id="vaLock">🔒 Sperren</a>';
-    $("vaLock").onclick = function (e) { e.preventDefault(); BCLock.forget(); loadVA(); };
+    // gleicher Tab, damit das Passwort aus dieser Sitzung weiter gilt
+    $("vaLinks").innerHTML = '<a href="report.html?r=' + esc(r.report.replace(".html", "")) + '">Ganzen Report öffnen</a>' +
+      '<a href="report.html">Archiv</a><a href="#" id="vaLock">🔒 Sperren</a>';
+    $("vaLock").onclick = function (e) { e.preventDefault(); BCLock.forget(); location.reload(); };
   }
 
   // Reports liegen verschlüsselt auf GitHub; ohne Passwort zeigt der Kasten nur das Schloss
@@ -179,18 +180,48 @@
         $("vaMeta").textContent = ""; $("vaLinks").innerHTML = ""; $("vaWatch").innerHTML = "";
         BCLock.form($("vaTipps"), unlock, function () {});
       };
-      if (pw) unlock(pw).catch(function () { BCLock.forget(); ask(); }); else ask();
+      // kein forget: dasselbe Passwort entsperrt auch das Cockpit
+      if (pw) unlock(pw).catch(ask); else ask();
     }).catch(function () { $("va").hidden = true; });
   }
 
+  function unreachable() { $("stamp").textContent = "Daten nicht erreichbar, neuer Versuch in 5 Min."; }
+
+  // Ist ein Cockpit-Passwort gesetzt, liegen die Daten nur verschlüsselt vor (data.enc.json)
+  function openSealed(pw) {
+    return BCLock.load("data.enc.json", pw).then(function (t) {
+      document.body.classList.remove("locked");
+      $("gate").hidden = true;
+      render(JSON.parse(t));
+    });
+  }
+
+  function gate() {
+    document.body.classList.add("locked");
+    $("gate").hidden = false;
+    $("stamp").textContent = "gesperrt";
+    BCLock.form($("gate"), openSealed, loadVA, "Börsencockpit ist passwortgeschützt");
+  }
+
   function load() {
-    fetch("data.json?t=" + Date.now(), { cache: "no-store" })
-      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(render)
-      .catch(function () { $("stamp").textContent = "Daten nicht erreichbar, neuer Versuch in 5 Min."; });
+    fetch("data.enc.json", { method: "HEAD", cache: "no-store" }).then(function (h) {
+      if (!h.ok) {
+        return fetch("data.json?t=" + Date.now(), { cache: "no-store" })
+          .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+          .then(function (d) { render(d); loadVA(); });
+      }
+      var pw = BCLock.stored();
+      if (!pw) return gate();
+      return openSealed(pw).then(loadVA, function (e) {
+        if (e.message !== "Falsches Passwort") throw e;
+        BCLock.forget();
+        gate();
+      });
+    }).catch(unreachable);
   }
   load();
-  loadVA();
-  setInterval(function () { load(); loadVA(); }, 5 * 60 * 1000);
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) { load(); loadVA(); } });
+  setInterval(function () { if (!document.body.classList.contains("locked")) load(); }, 5 * 60 * 1000);
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden && !document.body.classList.contains("locked")) load();
+  });
 })();

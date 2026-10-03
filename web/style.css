@@ -115,3 +115,6 @@ a:focus-visible, summary:focus-visible{outline:2px solid var(--accent); outline-
 .rt.halten{background:var(--warn-soft); color:var(--warn)} .rt.neutral{background:var(--sunk); color:var(--muted)}
 .foot{font-size:12px; color:var(--faint)}
 @media (prefers-reduced-motion:no-preference){ .tile, .links a{transition:border-color .15s} }
+/* Ganzes Cockpit gesperrt: nur Kopfzeile und Passwortfeld */
+body.locked .page > :not(.mbar):not(#gate){display:none}
+.gate{max-width:440px}
