@@ -31,7 +31,7 @@ def log(msg):
     print(msg, file=sys.stderr)
 
 
-def http_get(url, headers=None, timeout=25, retries=2):
+def http_get(url, headers=None, timeout=15, retries=1):
     h = {"User-Agent": UA, "Accept": "*/*"}
     h.update(headers or {})
     last = None
@@ -50,7 +50,11 @@ def http_json(url, headers=None):
     return json.loads(http_get(url, headers))
 
 
+TIMINGS = {}
+
+
 def safe(label, fn, *args):
+    t0 = time.time()
     try:
         return fn(*args)
     except Exception as e:  # noqa: BLE001
@@ -58,6 +62,8 @@ def safe(label, fn, *args):
         log("FEHLER " + msg)
         ERRORS.append(msg)
         return None
+    finally:
+        TIMINGS[label] = TIMINGS.get(label, 0) + time.time() - t0
 
 
 # ---------------------------------------------------------------- Quellen
@@ -450,6 +456,14 @@ def main():
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(data, ensure_ascii=False, indent=1), "utf-8")
     log(f"geschrieben: {out} ({len(ERRORS)} Fehler)")
+    # Hinweise für die GitHub-Actions-Oberfläche
+    if "GITHUB_ACTIONS" in __import__("os").environ:
+        ok = sum(1 for g in groups for t in g["items"] if "value" in t and not t.get("stale"))
+        slow = ", ".join(f"{k} {v:.0f}s" for k, v in sorted(TIMINGS.items(), key=lambda x: -x[1])[:5])
+        print(f"::notice title=Datenlauf::{ok}/12 Kennzahlen frisch, Smart/Dumb "
+              f"{'ok' if sd and not sd.get('stale') else 'fehlt'}, {len(videos)} Videos. Langsamste: {slow}")
+        for e in ERRORS[:20]:
+            print("::warning title=Quelle::" + e.replace("\n", " ")[:300])
 
 
 if __name__ == "__main__":
