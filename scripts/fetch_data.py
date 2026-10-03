@@ -561,6 +561,15 @@ def main():
         srcs = ", ".join(f"{t['name']}={t.get('source', '-')}{'(alt)' if t.get('stale') else ''}"
                          for g in groups for t in g["items"])
         print(f"::notice title=Quellen::{srcs}")
+        vals = "; ".join(f"{t['name']} {t['value']:.4g} (Vortag {t['prev']:.4g}, {len(t.get('spark', []))} Pkt"
+                         f"{', 200T ' + ('über' if t['aboveMa200'] else 'unter') if 'aboveMa200' in t else ''})"
+                         for g in groups for t in g["items"] if "value" in t)
+        print(f"::notice title=Werte::{vals}")
+        if sd:
+            print(f"::notice title=SmartDumb::{sd.get('market')} {sd['asOf']}: smart {sd['smart']} dumb {sd['dumb']} "
+                  f"spread {sd['spread']} | Marktlage {data['verdict']['label']}: {data['verdict']['text']}")
+        print("::notice title=Videos::" + " | ".join(f"{v['channel']}: {v['title'][:40]} ({v['published'][:10]})"
+                                                    for v in data["videos"]))
         slow = ", ".join(f"{k} {v:.0f}s" for k, v in sorted(TIMINGS.items(), key=lambda x: -x[1])[:5])
         print(f"::notice title=Datenlauf::{ok}/12 Kennzahlen frisch, Smart/Dumb "
               f"{'ok' if sd and not sd.get('stale') else 'fehlt'}, {len(videos)} Videos. Langsamste: {slow}")
