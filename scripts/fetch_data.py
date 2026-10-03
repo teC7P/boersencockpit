@@ -138,15 +138,30 @@ def yahoo_series(symbol):
 
 
 
-def stooq_series(symbol):
-    txt = http_get(f"https://stooq.com/q/d/l/?s={urllib.parse.quote(symbol)}&i=d")
-    rows = [r for r in csv.reader(io.StringIO(txt))][1:]
-    vals = [(r[0], float(r[4])) for r in rows if len(r) > 4 and r[4] not in ("", "null")]
-    if len(vals) < 5:
-        raise RuntimeError(f"Stooq {symbol}: keine Daten ({txt[:60]!r})")
-    vals = vals[-260:]
-    return {"value": vals[-1][1], "prev": vals[-2][1], "history": [v for _, v in vals],
-            "asOf": vals[-1][0], "source": "Stooq"}
+def _num(x):
+    return float(str(x).replace(",", "").replace("%", "").strip())
+
+
+def cnbc_series(symbol):
+    """Kurs und 1-Jahres-Verlauf von CNBC (inoffiziell, ohne Schlüssel)."""
+    q = http_json("https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol"
+                  f"?symbols={urllib.parse.quote(symbol)}&requestMethod=itv&noform=1&partnerId=2"
+                  "&fund=1&exthrs=1&output=json&events=1")
+    quotes = q["FormattedQuoteResult"]["FormattedQuote"]
+    fq = quotes[0] if isinstance(quotes, list) else quotes
+    price = _num(fq["last"])
+    prev = _num(fq.get("previous_day_closing") or fq.get("previous_close"))
+    hist = []
+    try:
+        c = http_json(f"https://ts-api.cnbc.com/harmony/app/charts/1Y.json?symbol={urllib.parse.quote(symbol)}")
+        bars = c["barData"]["priceBars"]
+        hist = [_num(b["close"]) for b in bars if b.get("close") not in (None, "")]
+    except Exception as e:  # noqa: BLE001
+        log(f"CNBC-Verlauf {symbol}: {e}")
+    if not hist or abs(hist[-1] - price) / price > 0.0001:
+        hist.append(price)
+    return {"value": price, "prev": prev, "history": hist,
+            "asOf": fq.get("last_time") or NOW.isoformat(), "source": "CNBC"}
 
 
 def cboe_vix():
@@ -235,14 +250,14 @@ def bund10():
 
 
 def first_ok(*fns):
-    last = None
+    errs = []
     for fn in fns:
         try:
             return fn()
         except Exception as e:  # noqa: BLE001
-            last = e
+            errs.append(str(e)[:140])
             log(f"  Fallback nach Fehler: {e}")
-    raise RuntimeError(str(last))
+    raise RuntimeError(" | ".join(errs))
 
 
 FG_DE = {"extreme fear": "extreme Angst", "fear": "Angst", "neutral": "neutral",
@@ -382,9 +397,9 @@ def yh(symbol, *fallbacks):
 
 TILES = [
     ("Indizes", [
-        ("dax", "DAX", yh("^GDAXI", lambda: stooq_series("^dax")), {"dec": 0, "chg": "pct", "ma": True}),
-        ("spx", "S&P 500", yh("^GSPC", lambda: stooq_series("^spx")), {"dec": 0, "chg": "pct", "ma": True}),
-        ("ndx", "Nasdaq 100", yh("^NDX", lambda: stooq_series("^ndx")), {"dec": 0, "chg": "pct", "ma": True}),
+        ("dax", "DAX", yh("^GDAXI", lambda: cnbc_series(".GDAXI")), {"dec": 0, "chg": "pct", "ma": True}),
+        ("spx", "S&P 500", yh("^GSPC", lambda: cnbc_series(".SPX")), {"dec": 0, "chg": "pct", "ma": True}),
+        ("ndx", "Nasdaq 100", yh("^NDX", lambda: cnbc_series(".NDX")), {"dec": 0, "chg": "pct", "ma": True}),
     ]),
     ("Risiko & Stimmung", [
         ("vix", "VIX", yh("^VIX", cboe_vix, lambda: fred_series("VIXCLS")), {"dec": 1, "chg": "pct", "invert": True}),
@@ -395,12 +410,12 @@ TILES = [
         ("us10", "US 10 J.", yh("^TNX", treasury_10y, lambda: fred_series("DGS10")),
          {"dec": 2, "chg": "bp", "unit": "%", "invert": True}),
         ("de10", "Bund 10 J.", bund10, {"dec": 2, "chg": "bp", "unit": "%", "invert": True}),
-        ("eurusd", "EUR/USD", yh("EURUSD=X", ecb_eurusd, lambda: stooq_series("eurusd")), {"dec": 4, "chg": "pct"}),
+        ("eurusd", "EUR/USD", yh("EURUSD=X", ecb_eurusd), {"dec": 4, "chg": "pct"}),
     ]),
     ("Rohstoffe & Krypto", [
-        ("gold", "Gold", yh("GC=F", lambda: stooq_series("gc.f")), {"dec": 0, "chg": "pct", "unit": "$"}),
-        ("brent", "Brent", yh("BZ=F", lambda: stooq_series("cb.f")), {"dec": 2, "chg": "pct", "unit": "$"}),
-        ("btc", "Bitcoin", yh("BTC-USD", coingecko_btc, lambda: stooq_series("btcusd")), {"dec": 0, "chg": "pct", "unit": "$"}),
+        ("gold", "Gold", yh("GC=F", lambda: cnbc_series("@GC.1")), {"dec": 0, "chg": "pct", "unit": "$"}),
+        ("brent", "Brent", yh("BZ=F", lambda: cnbc_series("@LCO.1")), {"dec": 2, "chg": "pct", "unit": "$"}),
+        ("btc", "Bitcoin", yh("BTC-USD", coingecko_btc), {"dec": 0, "chg": "pct", "unit": "$"}),
     ]),
 ]
 
