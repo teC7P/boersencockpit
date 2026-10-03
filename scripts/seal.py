@@ -62,7 +62,8 @@ def read(src):
 
 
 def main():
-    pw = os.environ.get("COCKPIT_PASSWORD", "")
+    # Leerzeichen oder Zeilenumbruch vom Einfügen ins Secret nicht mitzählen
+    pw = os.environ.get("COCKPIT_PASSWORD", "").strip()
     if not pw:
         sys.exit("COCKPIT_PASSWORD fehlt")
     cmd, src, dst = sys.argv[1:4]
