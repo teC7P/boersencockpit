@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Video-Report</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="page">
+  <header class="mbar"><h1 class="brand">Video-Reports</h1><a class="stamp" href="./">← Cockpit</a></header>
+  <section class="panel" id="box"><p class="empty">lädt …</p></section>
+</main>
+<script src="lock.js"></script>
+<script>
+(function () {
+  var box = document.getElementById("box");
+  var r = new URLSearchParams(location.search).get("r");
+  var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; }); };
+  async function show(pw) {
+    if (r && /^[0-9_-]+$/.test(r)) {
+      var html = await BCLock.load("va-" + r + ".enc.json", pw);
+      document.open(); document.write(html); document.close();
+      return;
+    }
+    var list = JSON.parse(await BCLock.load("va-archive.enc.json", pw)).reverse();
+    box.innerHTML = '<div class="ph"><h2>Archiv</h2><small>' + list.length + ' Reports</small></div><div class="links">' +
+      list.map(function (n) {
+        var t = n.slice(8, 10) + "." + n.slice(5, 7) + "." + n.slice(0, 4) + " " + n.slice(11, 13) + ":" + n.slice(13, 15);
+        return '<a href="report.html?r=' + esc(n) + '">' + t + " Uhr</a>";
+      }).join("") + "</div>";
+  }
+  function ask(msg) { BCLock.form(box, show, function () {}, msg); }
+  var pw = BCLock.stored();
+  if (pw) show(pw).catch(function () { BCLock.forget(); ask(); }); else ask();
+})();
+</script>
+</body>
+</html>

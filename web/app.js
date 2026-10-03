@@ -144,6 +144,45 @@
     $("mags").innerHTML = links(d.magazines);
   }
 
+  // Video-Analyse: kommt verschlüsselt vom lokalen Report-Tool auf dem Mac (va-*.enc.json)
+  function renderVA(r) {
+    var mins = function (s) { return Math.round(s / 60) + " min"; };
+    var created = Date.parse(r.created);
+    var old = Date.now() - created > 36 * 3600 * 1000;
+    $("vaMeta").innerHTML = esc(new Date(created).toLocaleString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })) +
+      " · " + r.videos + " Videos" + (old ? ' <span class="old-tag">alt</span>' : "");
+    $("vaTipps").innerHTML = '<ul class="va-tipps">' + (r.tipps.length ? r.tipps.map(function (t) {
+      return '<li><a href="' + esc(t.url) + '" target="_blank" rel="noopener">' + esc(t.title) + "</a>" +
+        '<span class="c">' + esc(t.channel) + " · " + mins(t.duration) + (t.relevanz ? " · " + t.relevanz + "/10" : "") + "</span>" +
+        '<span class="g">' + esc(t.grund) + "</span></li>";
+    }).join("") : '<li class="empty">Heute nichts, was sich extra lohnt.</li>') + "</ul>";
+    $("vaWatch").innerHTML = r.watch.length ? r.watch.map(function (w) {
+      var counts = {};
+      w.votes.forEach(function (v) { counts[v.rating] = (counts[v.rating] || 0) + 1; });
+      var badges = Object.keys(counts).map(function (k) { return '<span class="rt ' + esc(k) + '">' + counts[k] + "× " + esc(k) + "</span>"; }).join(" ");
+      var who = w.votes.map(function (v) { return '<a href="' + esc(v.url) + '" target="_blank" rel="noopener" title="' + esc(v.rating) + '">' + esc(v.channel) + " ▶</a>"; }).join(", ");
+      return '<span class="n">' + esc(w.name) + "</span><span>" + badges + '</span><span class="who">' + who + "</span>";
+    }).join("") : '<span class="empty">Keine Watchlist-Werte besprochen.</span>';
+    $("vaLinks").innerHTML = '<a href="report.html?r=' + esc(r.report.replace(".html", "")) + '" target="_blank">Ganzen Report öffnen</a>' +
+      '<a href="report.html" target="_blank">Archiv</a><a href="#" id="vaLock">🔒 Sperren</a>';
+    $("vaLock").onclick = function (e) { e.preventDefault(); BCLock.forget(); loadVA(); };
+  }
+
+  // Reports liegen verschlüsselt auf GitHub; ohne Passwort zeigt der Kasten nur das Schloss
+  function loadVA() {
+    var pw = window.BCLock && BCLock.stored();
+    fetch("va-latest.enc.json", { method: "HEAD", cache: "no-store" }).then(function (r) {
+      if (!r.ok) { $("va").hidden = true; return; }
+      $("va").hidden = false;
+      var unlock = function (p) { return BCLock.load("va-latest.enc.json", p).then(function (t) { renderVA(JSON.parse(t)); }); };
+      var ask = function () {
+        $("vaMeta").textContent = ""; $("vaLinks").innerHTML = ""; $("vaWatch").innerHTML = "";
+        BCLock.form($("vaTipps"), unlock, function () {});
+      };
+      if (pw) unlock(pw).catch(function () { BCLock.forget(); ask(); }); else ask();
+    }).catch(function () { $("va").hidden = true; });
+  }
+
   function load() {
     fetch("data.json?t=" + Date.now(), { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
@@ -151,6 +190,7 @@
       .catch(function () { $("stamp").textContent = "Daten nicht erreichbar, neuer Versuch in 5 Min."; });
   }
   load();
-  setInterval(load, 5 * 60 * 1000);
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) load(); });
+  loadVA();
+  setInterval(function () { load(); loadVA(); }, 5 * 60 * 1000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) { load(); loadVA(); } });
 })();

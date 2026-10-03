@@ -91,5 +91,27 @@ a:focus-visible, summary:focus-visible{outline:2px solid var(--accent); outline-
 .links a{font-size:12.5px; padding:3px 9px; border:1px solid var(--line); border-radius:6px; background:var(--bg)}
 .links a:hover{border-color:var(--accent); color:var(--accent)}
 .empty{font-size:13px; color:var(--faint)}
+.va-grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px}
+@media (max-width:880px){ .va-grid{grid-template-columns:1fr} }
+.va-h{margin:0 0 6px; font-family:var(--f-mono); font-weight:500; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.va-tipps{margin:0; padding:0; list-style:none; display:grid; gap:10px}
+.lock{display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:13px}
+.lock span{width:100%; color:var(--muted)}
+.lock input[type=password]{font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); min-width:0; flex:1 1 160px}
+.lock button{font:inherit; padding:6px 14px; border:0; border-radius:6px; background:var(--accent); color:#fff; cursor:pointer}
+.lock label{display:flex; gap:5px; align-items:center; color:var(--muted)}
+.lock em{color:var(--down); font-style:normal; width:100%}
+.va-tipps a{font-size:14px; font-weight:600; line-height:1.3}
+.va-tipps a:hover{color:var(--accent)}
+.va-tipps .c{display:block; font-size:12px; color:var(--muted)}
+.va-tipps .g{display:block; font-size:12.5px; color:var(--muted); font-style:italic}
+.va-watch{display:grid; grid-template-columns:auto auto minmax(0,1fr); gap:5px 12px; align-items:baseline; font-size:13px}
+.va-watch .n{font-weight:600; white-space:nowrap}
+.va-watch .who{color:var(--muted)}
+.va-watch .who a{color:var(--muted); text-decoration:underline; text-decoration-color:var(--line)}
+.va-watch .who a:hover{color:var(--accent)}
+.rt{font-family:var(--f-mono); font-size:11px; padding:0 6px; border-radius:3px; white-space:nowrap; line-height:18px}
+.rt.kaufen{background:var(--up-soft); color:var(--up)} .rt.verkaufen{background:var(--down-soft); color:var(--down)}
+.rt.halten{background:var(--warn-soft); color:var(--warn)} .rt.neutral{background:var(--sunk); color:var(--muted)}
 .foot{font-size:12px; color:var(--faint)}
 @media (prefers-reduced-motion:no-preference){ .tile, .links a{transition:border-color .15s} }
