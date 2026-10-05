@@ -2,7 +2,8 @@ name: Cockpit aktualisieren
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    # Nicht zur vollen Viertelstunde: GitHub verschiebt oder verwirft dort Läufe besonders oft
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
   push:
     branches: [main]
