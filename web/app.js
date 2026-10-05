@@ -202,14 +202,26 @@
 
   // Update-Knopf: startet den GitHub-Workflow sofort. Der dafür nötige Token (darf nur Workflows
   // dieses Repos starten) liegt mit dem Cockpit-Passwort verschlüsselt in trigger.enc.json.
+  // Beim Öffnen automatisch anstoßen, wenn die Daten älter als 20 Minuten sind
+  // (höchstens alle 10 Minuten, damit mehrere offene Tabs/Geräte nicht ständig Läufe starten)
+  var AUTO_AGE = 20 * 60 * 1000, AUTO_GAP = 10 * 60 * 1000;
+  function lastTrigger(set) {
+    try { if (set) localStorage.setItem("bc-last-trigger", String(Date.now())); return +localStorage.getItem("bc-last-trigger") || 0; }
+    catch (e) { return 0; }
+  }
+
   function showUpdate() {
-    fetch("trigger.enc.json", { method: "HEAD", cache: "no-store" }).then(function (r) { $("upd").hidden = !r.ok; });
+    fetch("trigger.enc.json", { method: "HEAD", cache: "no-store" }).then(function (r) {
+      $("upd").hidden = !r.ok;
+      if (r.ok && current && Date.now() - Date.parse(current) > AUTO_AGE && Date.now() - lastTrigger() > AUTO_GAP) updateNow();
+    });
   }
 
   function updateNow() {
     var btn = $("upd"), pw = BCLock.stored();
     var say = function (t, busy) { btn.textContent = t; btn.disabled = !!busy; };
     if (!pw) return;
+    lastTrigger(true);
     var owner = location.hostname.split(".")[0], repo = location.pathname.split("/")[1];
     say("⏳ startet …", true);
     BCLock.load("trigger.enc.json", pw).then(function (token) {
