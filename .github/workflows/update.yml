@@ -1,9 +1,7 @@
 name: Cockpit aktualisieren
 
 on:
-  schedule:
-    # Nicht zur vollen Viertelstunde: GitHub verschiebt oder verwirft dort Läufe besonders oft
-    - cron: "7,22,37,52 * * * *"
+  # Kein Zeitplan: Das Cockpit stößt den Lauf selbst an, wenn die Daten beim Öffnen älter als 20 Minuten sind
   workflow_dispatch:
   push:
     branches: [main]
