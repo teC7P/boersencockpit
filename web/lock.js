@@ -24,21 +24,32 @@ window.BCLock = (function () {
   }
   async function load(url, pw) {
     var r = await fetch(url + (url.indexOf("?") < 0 ? "?" : "&") + "t=" + Date.now(), { cache: "no-store" });
-    if (!r.ok) throw new Error("nicht gefunden");
-    return decrypt(await r.json(), pw);
+    if (!r.ok) throw new Error("Datei nicht erreichbar (" + r.status + ")");
+    var box = await r.json();
+    try { return await decrypt(box, pw); }
+    catch (e) {
+      // Leerzeichen am Rand (Autovervollständigen, Einfügen) nicht als Teil des Passworts werten
+      if (pw.trim() !== pw) return decrypt(box, pw.trim());
+      throw e;
+    }
   }
   // Kleines Passwortformular in ein Element setzen; onOk(pw) bekommt das (geprüfte) Passwort
   function form(el, test, onOk, msg) {
     el.innerHTML = '<form class="lock"><span>🔒 ' + (msg || "Passwortgeschützt") + '</span>' +
-      '<input type="password" autocomplete="current-password" placeholder="Passwort" required>' +
+      '<input type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Passwort" required>' +
       '<label><input type="checkbox"> auf diesem Gerät merken</label><button>Entsperren</button><em></em></form>';
     var f = el.querySelector("form");
     f.onsubmit = async function (e) {
       e.preventDefault();
-      var pw = f.querySelector("input[type=password]").value;
+      var pw = f.querySelector("input[type=password]").value.trim();
       f.querySelector("em").textContent = "prüfe …";
       try { await test(pw); remember(pw, f.querySelector("input[type=checkbox]").checked); onOk(pw); }
-      catch (err) { f.querySelector("em").textContent = "Falsches Passwort"; }
+      catch (err) {
+        // Nur ein echter Prüfsummenfehler heißt "falsches Passwort"; alles andere ist ein Lade- oder Browserproblem
+        f.querySelector("em").textContent = err && err.message === "Falsches Passwort" ? "Falsches Passwort"
+          : !window.crypto || !crypto.subtle ? "Dieser Browser kann nicht entschlüsseln (nur über https öffnen)"
+          : "Laden fehlgeschlagen, bitte neu versuchen" + (err && err.message ? " (" + err.message + ")" : "");
+      }
     };
   }
   return { stored: stored, forget: forget, load: load, form: form };
