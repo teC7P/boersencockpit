@@ -1,19 +1,19 @@
 {
   "channels": [
-    {"name": "Maxim investiert", "handle": "maximinvestiert"},
-    {"name": "Markus Koch", "handle": "kochwallstreet"},
-    {"name": "Mario Lochner", "handle": "mario.lochner"},
-    {"name": "LoKr-Room", "handle": "LoKr-Room"},
-    {"name": "10x Trading", "handle": "1OxTrading"},
-    {"name": "HKCM", "handle": "hkcm"},
-    {"name": "FinancialEducation", "handle": "FinancialEducation"},
-    {"name": "Tori Trades", "handle": "ToriTrades"},
-    {"name": "Ticker Symbol: YOU", "handle": "TickerSymbolYOU"},
-    {"name": "Fokusinvestor", "handle": "fokusinvestor"},
-    {"name": "CouchInvestor", "handle": "CouchInvestor"},
-    {"name": "FelixFriends", "handle": "FelixFriends"},
-    {"name": "Tom Nash", "handle": "TomNashTV"},
-    {"name": "Erichsen", "handle": "ErichsenGeld"}
+    {"name": "Maxim investiert", "handle": "maximinvestiert", "lang": "de"},
+    {"name": "Markus Koch", "handle": "kochwallstreet", "lang": "de"},
+    {"name": "Mario Lochner", "handle": "mario.lochner", "lang": "de"},
+    {"name": "LoKr-Room", "handle": "LoKr-Room", "lang": "de"},
+    {"name": "10x Trading", "handle": "1OxTrading", "lang": "de"},
+    {"name": "HKCM", "handle": "hkcm", "lang": "de"},
+    {"name": "FinancialEducation", "handle": "FinancialEducation", "lang": "en"},
+    {"name": "Tori Trades", "handle": "ToriTrades", "lang": "en"},
+    {"name": "Ticker Symbol: YOU", "handle": "TickerSymbolYOU", "lang": "en"},
+    {"name": "Fokusinvestor", "handle": "fokusinvestor", "lang": "de"},
+    {"name": "CouchInvestor", "handle": "CouchInvestor", "lang": "en"},
+    {"name": "FelixFriends", "handle": "FelixFriends", "lang": "en"},
+    {"name": "Tom Nash", "handle": "TomNashTV", "lang": "en"},
+    {"name": "Erichsen", "handle": "ErichsenGeld", "lang": "de"}
   ],
   "magazines": [
     {"name": "Aktien Magazin", "url": "https://de.readly.com/magazines/aktien-magazin"},
@@ -27,6 +27,18 @@
     {"name": "Markteinblicke", "url": "https://de.readly.com/magazines/markteinblicke"},
     {"name": "Traders", "url": "https://de.readly.com/magazines/traders"},
     {"name": "WirtschaftsWoche", "url": "https://de.readly.com/magazines/wirtschaftswoche"}
+  ],
+  "news": [
+    {"name": "Reuters Markets", "url": "https://www.reuters.com/markets/", "note": "Nachrichtenagentur, schnell und neutral", "lang": "en"},
+    {"name": "Bloomberg Markets", "url": "https://www.bloomberg.com/markets", "note": "Märkte weltweit, Anleihen, Makro", "lang": "en"},
+    {"name": "CNBC Markets", "url": "https://www.cnbc.com/markets/", "note": "US-Börse live, Vorbörse, Interviews", "lang": "en"},
+    {"name": "Financial Times Markets", "url": "https://www.ft.com/markets", "note": "Analysen und Kommentare", "lang": "en"},
+    {"name": "Seeking Alpha", "url": "https://seekingalpha.com/market-news", "note": "Marktnews und Einzelwert-Analysen", "lang": "en"},
+    {"name": "Finviz", "url": "https://finviz.com/map.ashx", "note": "S&P-500-Heatmap, Screener", "lang": "en"},
+    {"name": "Handelsblatt Finanzen", "url": "https://www.handelsblatt.com/finanzen/", "note": "Wirtschaft und Börse aus Deutschland", "lang": "de"},
+    {"name": "finanzen.net", "url": "https://www.finanzen.net/", "note": "Kurse, Nachrichten, Analystenstimmen", "lang": "de"},
+    {"name": "Investing.com Wirtschaftskalender", "url": "https://de.investing.com/economic-calendar/", "note": "Termine und Konjunkturdaten des Tages", "lang": "de"},
+    {"name": "wallstreet-online Forum", "url": "https://www.wallstreet-online.de/forum", "note": "größtes deutsches Börsenforum", "lang": "de"}
   ],
   "video_count": 8
 }

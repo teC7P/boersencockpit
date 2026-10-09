@@ -64,10 +64,15 @@
       "<span>" + spark(t.spark, trendGood) + '</span><span class="d ' + cls + '">' + chg + "</span></div>";
   }
 
+  var sdHist = null;
   function sdChart(hist) {
     var svg = $("sdChart");
+    sdHist = hist;
     if (!hist || hist.length < 2) { svg.innerHTML = ""; return; }
-    var W = 520, H = 220, L = 30, R = 8, T = 8, B = 22, iw = W - L - R, ih = H - T - B, n = hist.length;
+    // Breite wie das Panel (volle Seitenbreite), Höhe fest; auf schmalen Geräten skaliert der 520er-Rahmen
+    var W = Math.max(520, Math.round(svg.clientWidth || 520)), H = 220;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    var W0 = W, L = 30, R = 8, T = 8, B = 22, iw = W - L - R, ih = H - T - B, n = hist.length;
     var X = function (i) { return L + i * iw / (n - 1); };
     var Y = function (v) { return T + (100 - v) / 100 * ih; };
     var mono = 'font-size="10" font-family="IBM Plex Mono, monospace" fill="var(--faint)"';
@@ -80,7 +85,7 @@
     var last = -1;
     hist.forEach(function (p, i) {
       var d = new Date(p.d), m = d.getMonth();
-      if (m !== last && i > 2 && i < n - 3 && m % 3 === 0) {
+      if (m !== last && i > 2 && i < n - 3 && (W0 >= 800 || m % 3 === 0)) {
         s += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle" ' + mono + ">" + months[m] + "</text>";
       }
       last = m;
@@ -95,6 +100,12 @@
     s += '<circle cx="' + X(n - 1) + '" cy="' + Y(e.u) + '" r="3.5" fill="var(--dumb)"/>';
     svg.innerHTML = s;
   }
+
+  var resizeT;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(function () { if (sdHist) sdChart(sdHist); }, 150);
+  });
 
   var current = null;  // Zeitstempel der angezeigten Daten (für den Update-Knopf)
 
@@ -128,23 +139,37 @@
       $("sdMeta").textContent = "gerade keine Daten";
     }
 
-    var vids = d.videos || [];
-    $("vMeta").textContent = (d.channels || []).length + " Kanäle";
-    $("vids").innerHTML = vids.length ? vids.map(function (v) {
+    // Je Kanal das neueste Video, nach Sprache getrennt und alphabetisch nach Kanalname
+    var latest = d.latest || [];
+    $("vMeta").textContent = latest.length + " Kanäle";
+    var byName = function (a, b) { return a.channel.localeCompare(b.channel, "de", { sensitivity: "base" }); };
+    var vrow = function (v) {
+      if (!v.url) {
+        return '<li><a href="' + esc(v.channelUrl) + '" target="_blank" rel="noopener"><span class="noimg"></span>' +
+          '<span><span class="c">' + esc(v.channel) + '</span><span class="t empty">gerade kein Video geladen</span></span></a></li>';
+      }
       var fresh = Date.now() - Date.parse(v.published) < 24 * 3600 * 1000;
       return '<li><a href="' + esc(v.url) + '" target="_blank" rel="noopener">' +
         '<img src="' + esc(v.thumb) + '" alt="" loading="lazy">' +
-        '<span><span class="t">' + esc(v.title) + '</span><span class="c">' + esc(v.channel) +
-        (fresh ? '<span class="new">neu</span>' : "") + "</span></span>" +
+        '<span><span class="c">' + esc(v.channel) + (fresh ? '<span class="new">neu</span>' : "") + "</span>" +
+        '<span class="t">' + esc(v.title) + "</span></span>" +
         '<span class="a">' + ago(v.published) + "</span></a></li>";
-    }).join("") : '<li class="empty">Gerade keine Videos geladen.</li>';
+    };
+    ["de", "en"].forEach(function (lang) {
+      var rows = latest.filter(function (v) { return (v.lang || "de") === lang; }).sort(byName);
+      $(lang === "de" ? "ytDe" : "ytEn").innerHTML = rows.length ? rows.map(vrow).join("")
+        : '<li class="empty">Daten kommen mit der nächsten Aktualisierung.</li>';
+    });
     var links = function (arr) {
       return (arr || []).map(function (x) {
         return '<a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.name) + "</a>";
       }).join("");
     };
-    $("channels").innerHTML = links(d.channels);
     $("mags").innerHTML = links(d.magazines);
+    $("news").innerHTML = (d.news || []).map(function (x) {
+      return '<li><a href="' + esc(x.url) + '" target="_blank" rel="noopener"><b>' + esc(x.name) + "</b>" +
+        '<span>' + esc(x.note || "") + '</span><i>' + esc((x.lang || "").toUpperCase()) + "</i></a></li>";
+    }).join("") || '<li class="empty">Daten kommen mit der nächsten Aktualisierung.</li>';
   }
 
   // Video-Analyse: kommt verschlüsselt vom lokalen Report-Tool auf dem Mac (va-*.enc.json)

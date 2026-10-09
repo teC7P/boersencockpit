@@ -1,4 +1,4 @@
-/* Börsencockpit: Kopfzeile Marktlage, Kennzahlen in 4 Gruppen, Smart/Dumb-Panel, Videos + Magazine */
+/* Börsencockpit: Kopfzeile Marktlage, Kennzahlen in 4 Gruppen, Smart/Dumb über volle Breite, YT-Kanäle, Magazine, Lese-Links */
 :root{
   --bg:#f3f5f8; --surface:#ffffff; --sunk:#e9edf3; --line:#d6dce6;
   --fg:#141a24; --muted:#566173; --faint:#7d8798;
@@ -63,8 +63,6 @@ a:focus-visible, summary:focus-visible{outline:2px solid var(--accent); outline-
 .ma.up{background:var(--up-soft); color:var(--up)} .ma.down{background:var(--down-soft); color:var(--down)}
 .old-tag{font-family:var(--f-mono); font-size:10px; color:var(--warn)}
 
-.lower{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; align-items:start}
-@media (max-width:880px){ .lower{grid-template-columns:1fr} }
 .panel{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:14px 16px; display:grid; gap:12px; min-width:0}
 .panel h2{font-size:17px}
 .ph{display:flex; justify-content:space-between; align-items:baseline; gap:8px; flex-wrap:wrap}
@@ -75,6 +73,9 @@ a:focus-visible, summary:focus-visible{outline:2px solid var(--accent); outline-
 .sd-nums span{font-size:12px; color:var(--muted)}
 .smart{color:var(--smart)} .dumb{color:var(--dumb)}
 .smart-bg{background:var(--smart)} .dumb-bg{background:var(--dumb)}
+.sd-body{display:grid; grid-template-columns:minmax(240px,300px) minmax(0,1fr); gap:20px; align-items:center}
+@media (max-width:880px){ .sd-body{grid-template-columns:1fr} }
+.sd-side{display:grid; gap:12px; align-content:start}
 .sd-chart{width:100%; height:auto; display:block}
 .sd-legend{display:flex; gap:14px; font-size:12px; color:var(--muted); flex-wrap:wrap}
 .sd-legend i{display:inline-block; width:14px; height:3px; border-radius:2px; vertical-align:middle; margin-right:6px}
@@ -90,8 +91,20 @@ a:focus-visible, summary:focus-visible{outline:2px solid var(--accent); outline-
 .vids .t{font-size:13.5px; font-weight:500; line-height:1.3; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
 .vids .c{font-size:12px; color:var(--muted)}
 .vids .a{font-family:var(--f-mono); font-size:11px; color:var(--faint); white-space:nowrap}
+.yt-cols{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px}
+@media (max-width:880px){ .yt-cols{grid-template-columns:1fr} }
+.yt-cols .c{display:block; font-weight:600; color:var(--fg); font-size:12.5px}
+.vids .noimg{width:96px; aspect-ratio:16/9; border-radius:5px; background:var(--sunk); display:block}
+.news{margin:0; padding:0; list-style:none; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 24px}
+@media (max-width:880px){ .news{grid-template-columns:1fr} }
+.news li{border-bottom:1px solid var(--line)}
+.news a{display:grid; grid-template-columns:minmax(0,auto) minmax(0,1fr) auto; gap:10px; align-items:baseline; padding:7px 0}
+.news b{font-size:13.5px; font-weight:600; white-space:nowrap}
+.news span{font-size:12.5px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.news i{font-style:normal; font-family:var(--f-mono); font-size:10px; color:var(--faint)}
+.news a:hover b{color:var(--accent)}
 .new{font-family:var(--f-mono); font-size:10px; color:var(--accent); background:var(--accent-soft); padding:0 5px; border-radius:3px; margin-left:6px}
-.links{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px}
+.links{display:flex; gap:6px; flex-wrap:wrap}
 .links a{font-size:12.5px; padding:3px 9px; border:1px solid var(--line); border-radius:6px; background:var(--bg)}
 .links a:hover{border-color:var(--accent); color:var(--accent)}
 .empty{font-size:13px; color:var(--faint)}
