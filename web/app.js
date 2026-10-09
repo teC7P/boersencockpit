@@ -173,27 +173,22 @@
   }
 
   // Video-Analyse: kommt verschlüsselt vom lokalen Report-Tool auf dem Mac (va-*.enc.json)
+  // Nur Stand und Links: gelesen wird immer der ganze Report. "neu" bis der Report einmal geöffnet wurde.
+  function seenReport(set) {
+    try { if (set) localStorage.setItem("bc-seen-report", set); return localStorage.getItem("bc-seen-report"); }
+    catch (e) { return null; }
+  }
   function renderVA(r) {
-    var mins = function (s) { return Math.round(s / 60) + " min"; };
     var created = Date.parse(r.created);
     var old = Date.now() - created > 36 * 3600 * 1000;
+    var fresh = seenReport() !== r.report;
+    $("vaForm").innerHTML = "";
     $("vaMeta").innerHTML = esc(new Date(created).toLocaleString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })) +
-      " · " + r.videos + " Videos" + (old ? ' <span class="old-tag">alt</span>' : "");
-    $("vaTipps").innerHTML = '<ul class="va-tipps">' + (r.tipps.length ? r.tipps.map(function (t) {
-      return '<li><a href="' + esc(t.url) + '" target="_blank" rel="noopener">' + esc(t.title) + "</a>" +
-        '<span class="c">' + esc(t.channel) + " · " + mins(t.duration) + (t.relevanz ? " · " + t.relevanz + "/10" : "") + "</span>" +
-        '<span class="g">' + esc(t.grund) + "</span></li>";
-    }).join("") : '<li class="empty">Heute nichts, was sich extra lohnt.</li>') + "</ul>";
-    $("vaWatch").innerHTML = r.watch.length ? r.watch.map(function (w) {
-      var counts = {};
-      w.votes.forEach(function (v) { counts[v.rating] = (counts[v.rating] || 0) + 1; });
-      var badges = Object.keys(counts).map(function (k) { return '<span class="rt ' + esc(k) + '">' + counts[k] + "× " + esc(k) + "</span>"; }).join(" ");
-      var who = w.votes.map(function (v) { return '<a href="' + esc(v.url) + '" target="_blank" rel="noopener" title="' + esc(v.rating) + '">' + esc(v.channel) + " ▶</a>"; }).join(", ");
-      return '<span class="n">' + esc(w.name) + "</span><span>" + badges + '</span><span class="who">' + who + "</span>";
-    }).join("") : '<span class="empty">Keine Watchlist-Werte besprochen.</span>';
+      " · " + r.videos + " Videos" + (fresh ? '<span class="new">neu</span>' : "") + (old ? ' <span class="old-tag">alt</span>' : "");
     // gleicher Tab, damit das Passwort aus dieser Sitzung weiter gilt
-    $("vaLinks").innerHTML = '<a href="report.html?r=' + esc(r.report.replace(".html", "")) + '">Ganzen Report öffnen</a>' +
+    $("vaLinks").innerHTML = '<a class="main" id="vaOpen" href="report.html?r=' + esc(r.report.replace(".html", "")) + '">Report öffnen</a>' +
       '<a href="report.html">Archiv</a><a href="#" id="vaLock">🔒 Sperren</a>';
+    $("vaOpen").onclick = function () { seenReport(r.report); };
     $("vaLock").onclick = function (e) { e.preventDefault(); BCLock.forget(); location.reload(); };
   }
 
@@ -205,8 +200,8 @@
       $("va").hidden = false;
       var unlock = function (p) { return BCLock.load("va-latest.enc.json", p).then(function (t) { renderVA(JSON.parse(t)); }); };
       var ask = function () {
-        $("vaMeta").textContent = ""; $("vaLinks").innerHTML = ""; $("vaWatch").innerHTML = "";
-        BCLock.form($("vaTipps"), unlock, function () {});
+        $("vaMeta").textContent = ""; $("vaLinks").innerHTML = "";
+        BCLock.form($("vaForm"), unlock, function () {});
       };
       // kein forget: dasselbe Passwort entsperrt auch das Cockpit
       if (pw) unlock(pw).catch(ask); else ask();

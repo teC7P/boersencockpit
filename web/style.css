@@ -108,8 +108,22 @@ a:focus-visible, summary:focus-visible{outline:2px solid var(--accent); outline-
 .links a{font-size:12.5px; padding:3px 9px; border:1px solid var(--line); border-radius:6px; background:var(--bg)}
 .links a:hover{border-color:var(--accent); color:var(--accent)}
 .empty{font-size:13px; color:var(--faint)}
+.va-bar{display:flex; align-items:center; gap:8px 14px; flex-wrap:wrap}
+.va-bar h2{font-size:17px}
+.va-bar small{font-family:var(--f-mono); font-size:11px; color:var(--faint)}
+.va-bar .links{margin-left:auto}
+.links a.main{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600}
+.links a.main:hover{color:#fff; opacity:.9}
+#vaForm:empty{display:none}
 .va-grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px}
-@media (max-width:880px){ .va-grid{grid-template-columns:1fr} }
+@media (max-width:880px){ .va-bar{display:flex; align-items:center; gap:8px 14px; flex-wrap:wrap}
+.va-bar h2{font-size:17px}
+.va-bar small{font-family:var(--f-mono); font-size:11px; color:var(--faint)}
+.va-bar .links{margin-left:auto}
+.links a.main{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600}
+.links a.main:hover{color:#fff; opacity:.9}
+#vaForm:empty{display:none}
+.va-grid{grid-template-columns:1fr} }
 .va-h{margin:0 0 6px; font-family:var(--f-mono); font-weight:500; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
 .va-tipps{margin:0; padding:0; list-style:none; display:grid; gap:10px}
 .lock{display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:13px}
