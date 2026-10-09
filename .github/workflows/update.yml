@@ -31,6 +31,8 @@ jobs:
         run: |
           mkdir -p site
           cp web/* site/
+          # Versionsnummer an CSS/JS hängen, damit Browser nach einer Änderung nicht die alte Datei aus dem Cache nehmen
+          sed -i "s/?v=dev/?v=${GITHUB_SHA::7}/g" site/*.html
           if [ -z "$COCKPIT_PASSWORD" ]; then
             python scripts/fetch_data.py --out site/data.json --previous "$BASE/data.json"
             exit 0
