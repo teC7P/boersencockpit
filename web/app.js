@@ -75,7 +75,7 @@
     var W0 = W, L = 30, R = 8, T = 8, B = 22, iw = W - L - R, ih = H - T - B, n = hist.length;
     var X = function (i) { return L + i * iw / (n - 1); };
     var Y = function (v) { return T + (100 - v) / 100 * ih; };
-    var mono = 'font-size="10" font-family="IBM Plex Mono, monospace" fill="var(--faint)"';
+    var mono = 'font-size="10" font-family="-apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif" fill="var(--faint)"';
     var s = "";
     [0, 25, 50, 75, 100].forEach(function (v) {
       s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="var(--line)" stroke-width="1"/>';
