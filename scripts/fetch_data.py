@@ -527,15 +527,22 @@ def main():
         sd = dict(prev["smartDumb"], stale=True)
 
     cache = dict(prev.get("channelIds", {}))
-    videos, channel_links = [], []
+    videos, channel_links, latest = [], [], []
+    prev_latest = {v.get("handle"): v for v in prev.get("latest", [])}
     for ch in cfg["channels"]:
         channel_links.append({"name": ch["name"], "url": f"https://www.youtube.com/@{ch['handle']}/videos"})
+        vs = None
         cid = safe(f"YouTube {ch['name']}", resolve_channel_id, ch["handle"], cache)
         if cid:
             vs = safe(f"YouTube {ch['name']}", channel_videos, ch["name"], ch["handle"], cid)
             if vs is None:
                 vs = [v for v in prev.get("videos", []) if v.get("handle") == ch["handle"]]
             videos.extend(vs)
+        # Neuestes Video je Kanal (für die Kanal-Spalten); fehlt der Feed, das letzte bekannte
+        newest = max(vs, key=lambda v: v.get("published", "")) if vs else prev_latest.get(ch["handle"])
+        latest.append(dict(newest or {"channel": ch["name"], "handle": ch["handle"]},
+                           channel=ch["name"], lang=ch.get("lang", "de"),
+                           channelUrl=f"https://www.youtube.com/@{ch['handle']}/videos"))
     videos.sort(key=lambda v: v.get("published", ""), reverse=True)
     if not videos:
         videos = prev.get("videos", [])
@@ -548,7 +555,9 @@ def main():
         "videos": videos[: cfg.get("video_count", 12)],
         "channels": channel_links,
         "channelIds": cache,
+        "latest": latest,
         "magazines": cfg["magazines"],
+        "news": cfg.get("news", []),
         "errors": ERRORS,
     }
     out = Path(args.out)
